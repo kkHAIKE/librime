@@ -2,8 +2,9 @@ set(CMAKE_USER_MAKE_RULES_OVERRIDE ${CMAKE_CURRENT_SOURCE_DIR}/cmake/c_flag_over
 set(CMAKE_USER_MAKE_RULES_OVERRIDE_CXX ${CMAKE_CURRENT_SOURCE_DIR}/cmake/cxx_flag_overrides.cmake)
 
 project(rime)
-cmake_minimum_required(VERSION 3.12)
-set(CMAKE_CXX_STANDARD 14)
+cmake_minimum_required(VERSION 3.16)
+set(CMAKE_CXX_STANDARD 20)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 set(rime_version 1.8.5)
 set(rime_soversion 1)
@@ -20,8 +21,6 @@ option(BUILD_SAMPLE "Build sample Rime plugin" OFF)
 option(BUILD_TEST "Build and run tests" ON)
 option(BUILD_SEPARATE_LIBS "Build separate rime-* libraries" OFF)
 option(ENABLE_LOGGING "Enable logging with google-glog library" ON)
-option(BOOST_USE_CXX11 "Boost has been built with C++11 support" OFF)
-option(BOOST_USE_SIGNALS2 "Boost use signals2 instead of signals" ON)
 option(ENABLE_ASAN "Enable Address Sanitizer (Unix Only)" OFF)
 option(INSTALL_PRIVATE_HEADERS "Install private headers (usually needed for externally built Rime plugins)" OFF)
 option(ENABLE_EXTERNAL_PLUGINS "Enable loading of externally built Rime plugins (from directory set by RIME_PLUGINS_DIR variable)" OFF)
@@ -45,7 +44,6 @@ if (ENABLE_ASAN)
   set(CMAKE_SHARED_LINKER_FLAGS "${asan_lflags} ${CMAKE_SHARED_LINKER_FLAGS}")
 endif()
 
-set(Boost_USE_STATIC_LIBS ${BUILD_STATIC})
 set(Gflags_STATIC ${BUILD_STATIC})
 set(Glog_STATIC ${BUILD_STATIC})
 set(LevelDb_STATIC ${BUILD_STATIC})
@@ -53,43 +51,28 @@ set(Marisa_STATIC ${BUILD_STATIC})
 set(Opencc_STATIC ${BUILD_STATIC})
 set(YamlCpp_STATIC ${BUILD_STATIC})
 
-set(Boost_USE_MULTITHREADED ON)
-if(MSVC)
-  set(Boost_USE_STATIC_RUNTIME ON)
-endif()
-
-if(NOT BOOST_USE_CXX11)
-  add_definitions("-DBOOST_NO_CXX11_SCOPED_ENUMS")
-endif()
-
-set(BOOST_COMPONENTS filesystem regex system)
-
-if(BOOST_USE_SIGNALS2)
-  set(RIME_BOOST_SIGNALS2 1)
-else()
-  set(BOOST_COMPONENTS ${BOOST_COMPONENTS} signals)
-endif()
-
-find_package(Boost 1.46.0 REQUIRED COMPONENTS ${BOOST_COMPONENTS})
-if(Boost_FOUND)
-  include_directories(${Boost_INCLUDE_DIRS})
-  link_directories(${Boost_LIBRARY_DIRS})
-endif()
+include(FetchContent)
 
 if(ENABLE_LOGGING)
 
-  find_package(Gflags)
-  if(Gflags_FOUND)
-    include_directories(${Gflags_INCLUDE_PATH})
-  endif()
+  # find_package(Gflags)
+  # if(Gflags_FOUND)
+  #   include_directories(${Gflags_INCLUDE_PATH})
+  # endif()
 
-  find_package(Glog REQUIRED)
-  if(Glog_FOUND)
-    include_directories(${Glog_INCLUDE_PATH})
-  endif()
-  if(Glog_STATIC)
-    add_definitions(-DGOOGLE_GLOG_DLL_DECL=)
-  endif()
+  # set(BUILD_SHARED_LIBS OFF CACHE BOOL "" FORCE)
+  set(BUILD_TESTING OFF CACHE BOOL "" FORCE)
+  set(WITH_GFLAGS OFF CACHE BOOL "" FORCE)
+  FetchContent_Declare(
+    glog
+    URL https://github.com/google/glog/archive/refs/tags/v0.6.0.tar.gz
+    URL_HASH SHA256=8a83bf982f37bb70825df71a9709fa90ea9f4447fb3c099e1d720a439d88bad6
+    # SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/deps/glog
+  )
+
+  # if(Glog_STATIC)
+  #   add_definitions(-DGOOGLE_GLOG_DLL_DECL=)
+  # endif()
 
   set(RIME_ENABLE_LOGGING 1)
 
@@ -98,35 +81,54 @@ endif()
 find_package(Threads)
 
 if(BUILD_TEST)
-  find_package(GTest REQUIRED)
-  if(GTEST_FOUND)
+
+  set(BUILD_GMOCK OFF CACHE BOOL "" FORCE)
+  FetchContent_Declare(
+    googletest
+    URL https://github.com/google/googletest/archive/refs/tags/v1.13.0.tar.gz
+    URL_HASH SHA256=ad7fdba11ea011c1d925b3289cf4af2c66a352e18d4c7264392fead75e919363
+    # SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/deps/googletest
+  )
+
     enable_testing()
-    include_directories(${GTEST_INCLUDE_DIRS})
-  endif()
+
 endif()
 
-find_package(YamlCpp REQUIRED)
-if(YamlCpp_FOUND)
-  include_directories(${YamlCpp_INCLUDE_PATH})
-endif()
+set(YAML_CPP_BUILD_CONTRIB OFF CACHE BOOL "" FORCE)
+set(YAML_CPP_BUILD_TOOLS OFF CACHE BOOL "" FORCE)
+set(YAML_CPP_BUILD_TESTS OFF CACHE BOOL "" FORCE)
+FetchContent_Declare(
+  yaml-cpp
+  URL https://github.com/jbeder/yaml-cpp/archive/refs/tags/yaml-cpp-0.7.0.tar.gz
+  URL_HASH SHA256=43e6a9fcb146ad871515f0d0873947e5d497a1c9c60c58cb102a97b47208b7c3
+  # SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/deps/yaml-cpp
+)
 
-find_package(LevelDb REQUIRED)
-if(LevelDb_FOUND)
-    include_directories(${LevelDb_INCLUDE_PATH})
-endif()
+set(LEVELDB_BUILD_TESTS OFF CACHE BOOL "" FORCE)
+set(LEVELDB_BUILD_BENCHMARKS OFF CACHE BOOL "" FORCE)
+FetchContent_Declare(
+  leveldb
+  URL https://github.com/google/leveldb/archive/refs/tags/1.23.tar.gz
+  URL_HASH SHA256=9a37f8a6174f09bd622bc723b55881dc541cd50747cbd08831c2a82d620f6d76
+  # SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/deps/leveldb
+)
 
-find_package(Marisa REQUIRED)
-if(Marisa_FOUND)
-  include_directories(${Marisa_INCLUDE_PATH})
-endif()
+# add_subdirectory(deps) opencc contains
+# find_package(Marisa REQUIRED)
+# if(Marisa_FOUND)
+#   include_directories(${Marisa_INCLUDE_PATH})
+# endif()
 
-find_package(Opencc REQUIRED)
-if(Opencc_FOUND)
-include_directories(${Opencc_INCLUDE_PATH})
-endif()
-if(Opencc_STATIC)
-  add_definitions(-DOpencc_BUILT_AS_STATIC)
-endif()
+FetchContent_Declare(
+  opencc
+  URL https://github.com/BYVoid/OpenCC/archive/refs/tags/ver.1.1.6.tar.gz
+  URL_HASH SHA256=169bff4071ffe814dc16df7d180ff6610db418f4816e9c0ce02cf874bdf058df
+)
+FetchContent_MakeAvailable(glog googletest yaml-cpp leveldb opencc)
+
+# if(Opencc_STATIC)
+#   add_definitions(-DOpencc_BUILT_AS_STATIC)
+# endif()
 
 find_path(X11Keysym X11/keysym.h)
 if(X11Keysym)

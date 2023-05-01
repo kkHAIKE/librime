@@ -40,14 +40,18 @@ if(ENABLE_EXTERNAL_PLUGINS)
 endif()
 
 set(rime_core_deps
-    ${Boost_LIBRARIES}
-    ${Glog_LIBRARY}
-    ${YamlCpp_LIBRARY}
+    glog::glog
+    yaml-cpp::yaml-cpp
+    # ${Boost_LIBRARIES}
+    # ${Glog_LIBRARY}
+    # ${YamlCpp_LIBRARY}
     ${CMAKE_THREAD_LIBS_INIT}
     ${rime_optional_deps})
 set(rime_dict_deps
-    ${LevelDb_LIBRARY}
-    ${Marisa_LIBRARY})
+    leveldb
+    marisa)
+    # ${LevelDb_LIBRARY}
+    # ${Marisa_LIBRARY})
 set(rime_gears_deps
     ${ICONV_LIBRARIES}
     ${ICU_LIBRARIES}
