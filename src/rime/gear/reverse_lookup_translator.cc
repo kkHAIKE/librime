@@ -4,7 +4,6 @@
 //
 // 2012-01-03 GONG Chen <chen.sst@gmail.com>
 //
-#include <boost/algorithm/string.hpp>
 #include <rime/candidate.h>
 #include <rime/engine.h>
 #include <rime/schema.h>
@@ -153,11 +152,11 @@ an<Translation> ReverseLookupTranslator::Query(const string& input,
   const string& preedit(input);
 
   size_t start = 0;
-  if (!prefix_.empty() && boost::starts_with(input, prefix_)) {
+  if (!prefix_.empty() && input.starts_with(prefix_)) {
     start = prefix_.length();
   }
   string code = input.substr(start);
-  if (!suffix_.empty() && boost::ends_with(code, suffix_)) {
+  if (!suffix_.empty() && code.ends_with(suffix_)) {
     code.resize(code.length() - suffix_.length());
   }
 

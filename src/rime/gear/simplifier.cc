@@ -4,8 +4,7 @@
 //
 // 2011-12-12 GONG Chen <chen.sst@gmail.com>
 //
-#include <boost/algorithm/string.hpp>
-#include <boost/filesystem.hpp>
+#include <filesystem>
 #include <stdint.h>
 #include <utf8.h>
 #include <utility>
@@ -18,12 +17,12 @@
 #include <rime/service.h>
 #include <rime/translation.h>
 #include <rime/gear/simplifier.h>
-#include <opencc/Config.hpp> // Place OpenCC #includes here to avoid VS2015 compilation errors
-#include <opencc/Converter.hpp>
-#include <opencc/Conversion.hpp>
-#include <opencc/ConversionChain.hpp>
-#include <opencc/Dict.hpp>
-#include <opencc/DictEntry.hpp>
+#include <Config.hpp> // Place OpenCC #includes here to avoid VS2015 compilation errors
+#include <Converter.hpp>
+#include <Conversion.hpp>
+#include <ConversionChain.hpp>
+#include <Dict.hpp>
+#include <DictEntry.hpp>
 
 static const char* quote_left = "\xe3\x80\x94";  //"\xef\xbc\x88";
 static const char* quote_right = "\xe3\x80\x95";  //"\xef\xbc\x89";
@@ -133,7 +132,7 @@ Simplifier::Simplifier(const Ticket& ticket) : Filter(ticket),
 }
 
 void Simplifier::Initialize() {
-  using namespace boost::filesystem;
+  using namespace std::filesystem;
   initialized_ = true;  // no retry
   path opencc_config_path = opencc_config_;
   if (opencc_config_path.extension().string() == ".ini") {

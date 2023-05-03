@@ -5,7 +5,7 @@
 // 2011-11-23 GONG Chen <chen.sst@gmail.com>
 //
 #include <algorithm>
-#include <boost/lexical_cast.hpp>
+#include <charconv>
 #include <rime/common.h>
 #include <rime/composition.h>
 #include <rime/context.h>
@@ -85,8 +85,10 @@ inline static bool is_switch_index(const string& option) {
 static Switches::SwitchOption switch_by_index(Switches& switches,
                                               const string& option) {
   try {
-    size_t index = boost::lexical_cast<size_t>(option.substr(1));
-    return switches.ByIndex(index);
+    size_t index{};
+    if (std::from_chars(option.data() + 1, option.data() + option.size(), index).ec == std::errc()) {
+      return switches.ByIndex(index);
+    }
   } catch (...) {}
   return {};
 }

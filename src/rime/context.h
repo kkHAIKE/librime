@@ -18,13 +18,13 @@ class KeyEvent;
 
 class Context {
  public:
-  using Notifier = signal<void (Context* ctx)>;
+  using Notifier = signal<Context*>;
   using OptionUpdateNotifier =
-      signal<void (Context* ctx, const string& option)>;
+      signal<Context*, const string&>;
   using PropertyUpdateNotifier =
-      signal<void (Context* ctx, const string& property)>;
+      signal<Context*, const string&>;
   using KeyEventNotifier =
-      signal<void (Context* ctx, const KeyEvent& key_event)>;
+      signal<Context*, const KeyEvent&>;
 
   Context() = default;
   ~Context() = default;

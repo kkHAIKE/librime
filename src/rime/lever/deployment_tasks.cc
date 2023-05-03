@@ -8,11 +8,8 @@
 #include <rime/build_config.h>
 
 #include <algorithm>
-#include <boost/algorithm/string.hpp>
-#include <boost/filesystem.hpp>
-#include <boost/uuid/random_generator.hpp>
-#include <boost/uuid/uuid.hpp>
-#include <boost/uuid/uuid_io.hpp>
+#include <filesystem>
+#include <uuid/uuid.h>
 #include <rime/common.h>
 #include <rime/resource.h>
 #include <rime/schema.h>
@@ -30,21 +27,21 @@
 
 using namespace std::placeholders;
 
-namespace fs = boost::filesystem;
+namespace fs = std::filesystem;
 
 namespace rime {
 
 DetectModifications::DetectModifications(TaskInitializer arg) {
   try {
-    data_dirs_ = boost::any_cast<vector<string>>(arg);
+    data_dirs_ = std::any_cast<vector<string>>(arg);
   }
-  catch (const boost::bad_any_cast&) {
+  catch (const std::bad_any_cast&) {
     LOG(ERROR) << "DetectModifications: invalid arguments.";
   }
 }
 
 bool DetectModifications::Run(Deployer* deployer) {
-  time_t last_modified = 0;
+  fs::file_time_type last_modified{};
   try {
     for (auto dir : data_dirs_) {
       fs::path p = fs::canonical(dir);
@@ -72,7 +69,7 @@ bool DetectModifications::Run(Deployer* deployer) {
     the<Config> user_config(Config::Require("user_config")->Create("user"));
     user_config->GetInt("var/last_build_time", &last_build_time);
   }
-  if (last_modified > (time_t)last_build_time) {
+  if (static_cast<int>(std::chrono::duration_cast<std::chrono::seconds>(last_modified.time_since_epoch()).count()) > last_build_time) {
     LOG(INFO) << "modifications detected. workspace needs update.";
     return true;
   }
@@ -85,7 +82,7 @@ bool InstallationUpdate::Run(Deployer* deployer) {
   const fs::path user_data_path(deployer->user_data_dir);
   if (!fs::exists(user_data_path)) {
     LOG(INFO) << "creating user data dir: " << user_data_path.string();
-    boost::system::error_code ec;
+    std::error_code ec;
     if (!fs::create_directories(user_data_path, ec)) {
       LOG(ERROR) << "Error creating user data dir: " << user_data_path.string();
     }
@@ -129,10 +126,13 @@ bool InstallationUpdate::Run(Deployer* deployer) {
   LOG(INFO) << "creating installation info.";
   time_t now = time(NULL);
   string time_str(ctime(&now));
-  boost::trim(time_str);
+  Trim(time_str);
   if (installation_id.empty()) {
-    installation_id =
-        boost::uuids::to_string(boost::uuids::random_generator()());
+    uuid_t id{};
+    uuid_generate_random(id);
+    installation_id.resize(36);
+    uuid_unparse(id, installation_id.data());
+
     LOG(INFO) << "generated installation id: " << installation_id;
     // for now:
     deployer->user_id = installation_id;
@@ -256,16 +256,16 @@ bool WorkspaceUpdate::Run(Deployer* deployer) {
 
 SchemaUpdate::SchemaUpdate(TaskInitializer arg) : verbose_(false) {
   try {
-    schema_file_ = boost::any_cast<string>(arg);
+    schema_file_ = std::any_cast<string>(arg);
   }
-  catch (const boost::bad_any_cast&) {
+  catch (const std::bad_any_cast&) {
     LOG(ERROR) << "SchemaUpdate: invalid arguments.";
   }
 }
 
 static bool MaybeCreateDirectory(fs::path dir) {
   if (!fs::exists(dir)) {
-    boost::system::error_code ec;
+    std::error_code ec;
     if (!fs::create_directories(dir, ec)) {
       LOG(ERROR) << "error creating directory '" << dir.string() << "'.";
       return false;
@@ -314,7 +314,7 @@ static bool TrashDeprecatedUserCopy(const fs::path& shared_copy,
       return false;
     }
     fs::path backup = trash / user_copy.filename();
-    boost::system::error_code ec;
+    std::error_code ec;
     fs::rename(user_copy, backup, ec);
     if (ec) {
       LOG(ERROR) << "error trashing file " << user_copy.string();
@@ -385,11 +385,11 @@ bool SchemaUpdate::Run(Deployer* deployer) {
 
 ConfigFileUpdate::ConfigFileUpdate(TaskInitializer arg) {
   try {
-    auto p = boost::any_cast<pair<string, string>>(arg);
+    auto p = std::any_cast<pair<string, string>>(arg);
     file_name_ = p.first;
     version_key_ = p.second;
   }
-  catch (const boost::bad_any_cast&) {
+  catch (const std::bad_any_cast&) {
     LOG(ERROR) << "ConfigFileUpdate: invalid arguments.";
   }
 }
@@ -423,7 +423,8 @@ static bool ConfigNeedsUpdate(Config* config) {
       }
       continue;
     }
-    if (recorded_time != (int) fs::last_write_time(source_file)) {
+    if (recorded_time != (int) std::chrono::duration_cast<std::chrono::seconds>(
+          std::filesystem::last_write_time(source_file).time_since_epoch()).count()) {
       LOG(INFO) << "source file " << (recorded_time ? "changed: " : "added: ")
                 << source_file.string();
       return true;
@@ -466,7 +467,7 @@ bool PrebuildAllSchemas::Run(Deployer* deployer) {
   for (fs::directory_iterator iter(shared_data_path), end;
        iter != end; ++iter) {
     fs::path entry(iter->path());
-    if (boost::ends_with(entry.string(), ".schema.yaml")) {
+    if (entry.string().ends_with(".schema.yaml")) {
       the<DeploymentTask> t(new SchemaUpdate(entry.string()));
       if (!t->Run(deployer))
         success = false;
@@ -490,7 +491,7 @@ bool SymlinkingPrebuiltDictionaries::Run(Deployer* deployer) {
     if (fs::is_symlink(entry)) {
       try {
         // a symlink becomes dangling if the target file is no longer provided
-        boost::system::error_code ec;
+        std::error_code ec;
         auto target_path = fs::canonical(entry, ec);
         bool bad_link = bool(ec);
         bool linked_to_shared_data =
@@ -534,8 +535,8 @@ bool UserDictSync::Run(Deployer* deployer) {
 }
 
 static bool IsCustomizedCopy(const string& file_name) {
-  if (boost::ends_with(file_name, ".yaml") &&
-      !boost::ends_with(file_name, ".custom.yaml")) {
+  if (file_name.ends_with(".yaml") &&
+      !file_name.ends_with(".custom.yaml")) {
     Config config;
     string checksum;
     if (config.LoadFromFile(file_name) &&
@@ -576,8 +577,8 @@ bool BackupConfigFiles::Run(Deployer* deployer) {
       ++skipped;  // customized copy
       continue;
     }
-    boost::system::error_code ec;
-    fs::copy_file(entry, backup, fs::copy_option::overwrite_if_exists, ec);
+    std::error_code ec;
+    fs::copy_file(entry, backup, fs::copy_options::overwrite_existing, ec);
     if (ec) {
       LOG(ERROR) << "error backing up file " << backup.string();
       ++failure;
@@ -607,15 +608,15 @@ bool CleanupTrash::Run(Deployer* deployer) {
       continue;
     auto filename = entry.filename().string();
     if (filename == "rime.log" ||
-        boost::ends_with(filename, ".bin") ||
-        boost::ends_with(filename, ".reverse.kct") ||
-        boost::ends_with(filename, ".userdb.kct.old") ||
-        boost::ends_with(filename, ".userdb.kct.snapshot")) {
+        filename.ends_with(".bin") ||
+        filename.ends_with(".reverse.kct") ||
+        filename.ends_with(".userdb.kct.old") ||
+        filename.ends_with(".userdb.kct.snapshot")) {
       if (!success && !MaybeCreateDirectory(trash)) {
         return false;
       }
       fs::path backup = trash / entry.filename();
-      boost::system::error_code ec;
+      std::error_code ec;
       fs::rename(entry, backup, ec);
       if (ec) {
         LOG(ERROR) << "error clean up file " << entry.string();
@@ -662,8 +663,8 @@ bool CleanOldLogFiles::Run(Deployer* deployer) {
       try {
         if (fs::is_regular_file(entry) &&
             !fs::is_symlink(entry) &&
-            boost::starts_with(file_name, "rime.") &&
-            !boost::contains(file_name, today)) {
+            file_name.starts_with("rime.") &&
+            file_name.find(today) == string::npos) {
           DLOG(INFO) << "removing log file '" << file_name << "'.";
           fs::remove(entry);
           ++removed;

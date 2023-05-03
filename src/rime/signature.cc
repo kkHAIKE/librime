@@ -5,7 +5,6 @@
 // 2012-02-21 GONG Chen <chen.sst@gmail.com>
 //
 #include <time.h>
-#include <boost/algorithm/string.hpp>
 #include <rime/config.h>
 #include <rime/deployer.h>
 #include <rime/signature.h>
@@ -17,7 +16,7 @@ bool Signature::Sign(Config* config, Deployer* deployer) {
   config->SetString(key_ + "/generator", generator_);
   time_t now = time(NULL);
   string time_str(ctime(&now));
-  boost::trim(time_str);
+  Trim(time_str);
   config->SetString(key_ + "/modified_time", time_str);
   config->SetString(key_ + "/distribution_code_name",
                     deployer->distribution_code_name);

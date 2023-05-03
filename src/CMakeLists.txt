@@ -42,20 +42,20 @@ endif()
 set(rime_core_deps
     glog::glog
     yaml-cpp::yaml-cpp
-    # ${Boost_LIBRARIES}
-    # ${Glog_LIBRARY}
-    # ${YamlCpp_LIBRARY}
+    Pal::Sigslot
+    fmt::fmt
+    ZLIB::ZLIB
     ${CMAKE_THREAD_LIBS_INIT}
     ${rime_optional_deps})
 set(rime_dict_deps
     leveldb
+    marisa_header
     marisa)
-    # ${LevelDb_LIBRARY}
-    # ${Marisa_LIBRARY})
 set(rime_gears_deps
-    ${ICONV_LIBRARIES}
-    ${ICU_LIBRARIES}
-    ${Opencc_LIBRARY})
+    # ${ICONV_LIBRARIES}
+    # ${ICU_LIBRARIES}
+    libopencc_header
+    libopencc)
 set(rime_levers_deps "")
 
 if(MINGW)

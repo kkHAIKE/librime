@@ -5,9 +5,8 @@
 #include <cctype>
 #include <cstdlib>
 #include <fstream>
-#include <boost/algorithm/string.hpp>
-#include <boost/filesystem.hpp>
-#include <boost/format.hpp>
+#include <filesystem>
+#include <fmt/core.h>
 #include <yaml-cpp/yaml.h>
 #include <rime/config/config_compiler.h>
 #include <rime/config/config_cow_ref.h>
@@ -64,7 +63,7 @@ bool ConfigData::LoadFromFile(const string& file_name,
   file_name_ = file_name;
   modified_ = false;
   root.reset();
-  if (!boost::filesystem::exists(file_name)) {
+  if (!std::filesystem::exists(file_name)) {
     LOG(WARNING) << "nonexistent config file '" << file_name << "'.";
     return false;
   }
@@ -99,7 +98,7 @@ bool ConfigData::IsListItemReference(const string& key) {
 }
 
 string ConfigData::FormatListIndex(size_t index) {
-  return boost::str(boost::format("@%u") % index);
+  return fmt::format("@{}", index);
 }
 
 static const string kAfter("after");
@@ -214,15 +213,18 @@ bool ConfigData::TraverseWrite(const string& path, an<ConfigItem> item) {
 }
 
 vector<string> ConfigData::SplitPath(const string& path) {
+  std::string_view trimmed_path;
+  if (auto pos = path.find_first_not_of('/'); pos != string::npos) {
+    trimmed_path = std::string_view(path.begin() + pos, path.end());
+  }
+
   vector<string> keys;
-  auto is_separator = boost::is_any_of("/");
-  auto trimmed_path = boost::trim_left_copy_if(path, is_separator);
-  boost::split(keys, trimmed_path, is_separator);
+  Split(keys, trimmed_path, '/');
   return keys;
 }
 
 string ConfigData::JoinPath(const vector<string>& keys) {
-  return boost::join(keys, "/");
+  return Join(keys, "/");
 }
 
 an<ConfigItem> ConfigData::Traverse(const string& path) {
@@ -298,9 +300,9 @@ void EmitScalar(const string& str_value, YAML::Emitter* emitter) {
   if (str_value.find_first_of("\r\n") != string::npos) {
     *emitter << YAML::Literal;
   }
-  else if (!boost::algorithm::all(str_value,
-                             boost::algorithm::is_alnum() ||
-                             boost::algorithm::is_any_of("_."))) {
+  else if (!std::all_of(str_value.begin(), str_value.end(), [](char c) {
+      return std::isalnum(c) || c == '_' || c == '.';
+    })) {
     *emitter << YAML::DoubleQuoted;
   }
   *emitter << str_value;

@@ -5,8 +5,6 @@
 // 2014-07-04 GONG Chen <chen.sst@gmail.com>
 //
 
-#include <boost/iostreams/device/array.hpp>
-#include <boost/iostreams/stream.hpp>
 #include <rime/common.h>
 #include <rime/dict/string_table.h>
 
@@ -104,14 +102,27 @@ void StringTableBuilder::UpdateReferences() {
   }
 }
 
+namespace detail {
+  // https://stackoverflow.com/questions/1494182/setting-the-internal-buffer-used-by-a-standard-stream-pubsetbuf
+  template <typename char_type>
+  struct ostreambuf : public std::basic_streambuf<char_type, std::char_traits<char_type> >
+  {
+      ostreambuf(char_type* buffer, std::streamsize bufferLength)
+      {
+          // set the "put" pointer the start of the buffer and record it's length.
+          this->setp(buffer, buffer + bufferLength);
+      }
+  };
+}
+
 void StringTableBuilder::Dump(char* ptr, size_t size) {
   if (size < BinarySize()) {
     LOG(ERROR) << "insufficient memory to dump string table.";
     return;
   }
-  namespace io = boost::iostreams;
-  io::basic_array_sink<char> sink(ptr, size);
-  io::stream<io::basic_array_sink<char>> stream(sink);
+
+  detail::ostreambuf<char> ostreamBuffer(ptr, size);
+  std::ostream stream(&ostreamBuffer);
   stream << trie_;
 }
 

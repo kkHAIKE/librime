@@ -4,8 +4,7 @@
 //
 // 2011-07-10 GONG Chen <chen.sst@gmail.com>
 //
-#include <boost/algorithm/string.hpp>
-#include <boost/range/adaptor/reversed.hpp>
+#include <ranges>
 #include <cmath>
 #include <utf8.h>
 #include <rime/candidate.h>
@@ -251,7 +250,12 @@ an<Translation> TableTranslator::Query(const string& input,
 
   const string& preedit(input);
   string code = input;
-  boost::trim_right_if(code, boost::is_any_of(delimiters_));
+  if (auto pos = code.find_last_not_of(delimiters_); pos == string::npos) {
+    code.clear();
+  }
+  else if (pos + 1 < code.length()) {
+    code.erase(pos + 1);
+  }
 
   an<Translation> translation;
   if (enable_completion_) {
@@ -608,7 +612,7 @@ TableTranslator::MakeSentence(const string& input, size_t start,
           }
         }
         if (resume_key > active_key &&
-            !boost::starts_with(resume_key, active_key))
+            !resume_key.starts_with(active_key))
           break;
       }
     }
@@ -646,7 +650,7 @@ TableTranslator::MakeSentence(const string& input, size_t start,
           }
         }
         if (resume_key > active_key &&
-            !boost::starts_with(resume_key, active_key))
+            !resume_key.starts_with(active_key))
           break;
       }
     }
@@ -655,7 +659,7 @@ TableTranslator::MakeSentence(const string& input, size_t start,
       dict_->prism()->CommonPrefixSearch(input.substr(start_pos), &matches);
       if (matches.empty())
         continue;
-      for (const auto& m : boost::adaptors::reverse(matches)) {
+      for (const auto& m : std::ranges::reverse_view(matches)) {
         if (m.length == 0)
           continue;
         size_t consumed_length =

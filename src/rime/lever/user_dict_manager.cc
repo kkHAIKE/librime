@@ -5,9 +5,7 @@
 // 2012-03-23 GONG Chen <chen.sst@gmail.com>
 //
 #include <fstream>
-#include <boost/algorithm/string.hpp>
-#include <boost/filesystem.hpp>
-#include <boost/scope_exit.hpp>
+#include <filesystem>
 #include <rime/common.h>
 #include <rime/deployer.h>
 #include <rime/algo/utilities.h>
@@ -16,7 +14,7 @@
 #include <rime/dict/user_db.h>
 #include <rime/lever/user_dict_manager.h>
 
-namespace fs = boost::filesystem;
+namespace fs = std::filesystem;
 
 namespace rime {
 
@@ -42,8 +40,8 @@ void UserDictManager::GetUserDictList(UserDictList* user_dict_list,
   }
   for (fs::directory_iterator it(path_), end; it != end; ++it) {
     string name = it->path().filename().string();
-    if (boost::ends_with(name, component->extension())) {
-      boost::erase_last(name, component->extension());
+    if (name.ends_with(component->extension())) {
+      name.erase(name.size() - component->extension().size());
       user_dict_list->push_back(name);
     }
   }
@@ -60,9 +58,9 @@ bool UserDictManager::Backup(const string& dict_name) {
       return false;
     }
   }
-  boost::filesystem::path dir(deployer_->user_data_sync_dir());
-  if (!boost::filesystem::exists(dir)) {
-    if (!boost::filesystem::create_directories(dir)) {
+  std::filesystem::path dir(deployer_->user_data_sync_dir());
+  if (!std::filesystem::exists(dir)) {
+    if (!std::filesystem::create_directories(dir)) {
       LOG(ERROR) << "error creating directory '" << dir.string() << "'.";
       return false;
     }
@@ -77,12 +75,10 @@ bool UserDictManager::Restore(const string& snapshot_file) {
     temp->Remove();
   if (!temp->Open())
     return false;
-  BOOST_SCOPE_EXIT( (&temp) )
-  {
+  ScopeExit([&temp] {
     temp->Close();
     temp->Remove();
-  }
-  BOOST_SCOPE_EXIT_END
+  });
   if (!temp->Restore(snapshot_file))
     return false;
   if (!UserDbHelper(temp).IsUserDb())
@@ -93,10 +89,9 @@ bool UserDictManager::Restore(const string& snapshot_file) {
   the<Db> dest(user_db_component_->Create(db_name));
   if (!dest->Open())
     return false;
-  BOOST_SCOPE_EXIT( (&dest) )
-  {
+  ScopeExit([&dest] {
     dest->Close();
-  } BOOST_SCOPE_EXIT_END
+  });
   LOG(INFO) << "merging '" << snapshot_file
             << "' from " << UserDbHelper(temp).GetUserId()
             << " into userdb '" << db_name << "'...";
@@ -111,11 +106,9 @@ int UserDictManager::Export(const string& dict_name,
   the<Db> db(user_db_component_->Create(dict_name));
   if (!db->OpenReadOnly())
     return -1;
-  BOOST_SCOPE_EXIT( (&db) )
-  {
+  ScopeExit([&db] {
     db->Close();
-  }
-  BOOST_SCOPE_EXIT_END
+  });
   if (!UserDbHelper(db).IsUserDb())
     return -1;
   TsvWriter writer(text_file, TableDb::format.formatter);
@@ -138,11 +131,9 @@ int UserDictManager::Import(const string& dict_name,
   the<Db> db(user_db_component_->Create(dict_name));
   if (!db->Open())
     return -1;
-  BOOST_SCOPE_EXIT( (&db) )
-  {
+  ScopeExit([&db] {
     db->Close();
-  }
-  BOOST_SCOPE_EXIT_END
+  });
   if (!UserDbHelper(db).IsUserDb())
     return -1;
   TsvReader reader(text_file, TableDb::format.parser);
@@ -171,7 +162,7 @@ bool UserDictManager::UpgradeUserDict(const string& dict_name) {
   LOG(INFO) << "upgrading user dict '" << dict_name << "'.";
   fs::path trash = fs::path(deployer_->user_data_dir) / "trash";
   if (!fs::exists(trash)) {
-    boost::system::error_code ec;
+    std::error_code ec;
     if (!fs::create_directories(trash, ec)) {
       LOG(ERROR) << "error creating directory '" << trash.string() << "'.";
       return false;
@@ -190,7 +181,7 @@ bool UserDictManager::Synchronize(const string& dict_name) {
   bool success = true;
   fs::path sync_dir(deployer_->sync_dir);
   if (!fs::exists(sync_dir)) {
-    boost::system::error_code ec;
+    std::error_code ec;
     if (!fs::create_directories(sync_dir, ec)) {
       LOG(ERROR) << "error creating directory '" << sync_dir.string() << "'.";
       return false;

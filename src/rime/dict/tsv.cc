@@ -5,7 +5,6 @@
 // 2013-04-14 GONG Chen <chen.sst@gmail.com>
 //
 #include <fstream>
-#include <boost/algorithm/string.hpp>
 #include <rime/common.h>
 #include <rime/dict/db_utils.h>
 #include <rime/dict/tsv.h>
@@ -23,15 +22,14 @@ int TsvReader::operator() (Sink* sink) {
   bool enable_comment = true;
   while (getline(fin, line)) {
     ++line_no;
-    boost::algorithm::trim_right(line);
+    line.erase(std::find_if_not(line.rbegin(), line.rend(), isspace).base(), line.end());
     // skip empty lines and comments
     if (line.empty()) continue;
     if (enable_comment && line[0] == '#') {
-      if (boost::starts_with(line, "#@")) {
+      if (line.starts_with("#@")) {
         // metadata
         line.erase(0, 2);
-        boost::algorithm::split(row, line,
-                                boost::algorithm::is_any_of("\t"));
+        Split(row, line, '\t');
         if (row.size() != 2 ||
             !sink->MetaPut(row[0], row[1])) {
           LOG(WARNING) << "invalid metadata at line " << line_no << ".";
@@ -44,8 +42,7 @@ int TsvReader::operator() (Sink* sink) {
       continue;
     }
     // read a tsv entry
-    boost::algorithm::split(row, line,
-                            boost::algorithm::is_any_of("\t"));
+    Split(row, line, '\t');
     if (!parser_(row, &key, &value) ||
         !sink->Put(key, value)) {
       LOG(WARNING) << "invalid entry at line " << line_no << ".";

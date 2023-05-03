@@ -8,6 +8,7 @@
 #define RIME_COMMON_H_
 
 #include <rime/build_config.h>
+#include <rime/util.h>
 
 #include <functional>
 #include <list>
@@ -20,13 +21,13 @@
 #include <unordered_set>
 #include <utility>
 #include <vector>
-#include <boost/optional.hpp>
+#include <optional>
 #define BOOST_BIND_NO_PLACEHOLDERS
 #ifdef RIME_BOOST_SIGNALS2
 #include <boost/signals2/connection.hpp>
 #include <boost/signals2/signal.hpp>
 #else
-#include <boost/signals.hpp>
+# include <sigslot/signal.hpp>
 #endif
 
 #ifdef RIME_ENABLE_LOGGING
@@ -52,7 +53,7 @@ using std::pair;
 using std::set;
 using std::string;
 using std::vector;
-using boost::optional;
+using std::optional;
 
 template <class Key, class T>
 using hash_map = std::unordered_map<Key, T>;
@@ -87,8 +88,8 @@ inline an<T> New(Args&&... args) {
 using boost::signals2::connection;
 using boost::signals2::signal;
 #else
-using boost::signals::connection;
-using boost::signal;
+using sigslot::connection;
+using sigslot::signal;
 #endif
 
 }  // namespace rime

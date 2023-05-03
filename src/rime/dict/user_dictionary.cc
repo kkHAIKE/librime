@@ -7,9 +7,7 @@
 #include <algorithm>
 #include <cfloat>
 #include <cmath>
-#include <boost/algorithm/string.hpp>
-#include <boost/lexical_cast.hpp>
-#include <boost/scope_exit.hpp>
+#include <charconv>
 #include <rime/common.h>
 #include <rime/language.h>
 #include <rime/schema.h>
@@ -34,10 +32,10 @@ struct DfsState {
   string value;
 
   bool IsExactMatch(const string& prefix) {
-    return boost::starts_with(key, prefix + '\t');
+    return key.starts_with(prefix + '\t');
   }
   bool IsPrefixMatch(const string& prefix) {
-    return boost::starts_with(key, prefix);
+    return key.starts_with(prefix);
   }
   void RecruitEntry(size_t pos);
   bool NextEntry() {
@@ -204,10 +202,9 @@ void UserDictionary::DfsLookup(const SyllableGraph& syll_graph,
                << ", syll_id: " << spelling.first
                << ", num_spellings: " << spelling.second.size();
     state->code.push_back(spelling.first);
-    BOOST_SCOPE_EXIT( (&state) ) {
+    ScopeExit([&state] {
       state->code.pop_back();
-    }
-    BOOST_SCOPE_EXIT_END
+    });
     if (!TranslateCodeToString(state->code, &prefix))
       continue;
     for (size_t i = 0; i < spelling.second.size(); ++i) {
@@ -216,10 +213,9 @@ void UserDictionary::DfsLookup(const SyllableGraph& syll_graph,
         continue;
       state->credibility.push_back(
           state->credibility.back() + props->credibility);
-      BOOST_SCOPE_EXIT( (&state) ) {
+      ScopeExit([&state] {
         state->credibility.pop_back();
-      }
-      BOOST_SCOPE_EXIT_END
+      });
       size_t end_pos = props->end_pos;
       DLOG(INFO) << "edge: [" << current_pos << ", " << end_pos << ")";
       if (prefix != state->key) {  // 'a b c |d ' > 'a b c \tabracadabra'
@@ -320,7 +316,9 @@ size_t UserDictionary::LookupWords(UserDictEntryIterator* result,
     if (!e)
       continue;
     e->custom_code = full_code;
-    boost::trim_right(full_code);  // remove trailing space a user dict key has
+    full_code.erase(
+      std::find_if_not(full_code.rbegin(), full_code.rend(), isspace).base(),
+      full_code.end()); // remove trailing space a user dict key has
     if (full_code.length() > len) {
       e->comment = "~" + full_code.substr(len);
       e->remaining_code_length = full_code.length() - len;
@@ -385,7 +383,7 @@ bool UserDictionary::UpdateEntry(const DictEntry& entry, int commits,
 bool UserDictionary::UpdateTickCount(TickCount increment) {
   tick_ += increment;
   try {
-    return db_->MetaUpdate("/tick", boost::lexical_cast<string>(tick_));
+    return db_->MetaUpdate("/tick", std::to_string(tick_));
   }
   catch (...) {
     return false;
@@ -403,7 +401,11 @@ bool UserDictionary::FetchTickCount() {
     if (!db_->MetaFetch("/tick", &value) &&
         !db_->Fetch("", &value))
       return false;
-    tick_ = boost::lexical_cast<TickCount>(value);
+    TickCount tmp{};
+    if (std::from_chars(value.data(), value.data() + value.size(), tmp).ec != std::errc()) {
+      return false;
+    }
+    tick_ = tmp;
     return true;
   }
   catch (...) {

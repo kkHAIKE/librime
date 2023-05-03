@@ -4,8 +4,7 @@
 //
 // 2011-11-02 GONG Chen <chen.sst@gmail.com>
 //
-#include <boost/algorithm/string.hpp>
-#include <boost/filesystem.hpp>
+#include <filesystem>
 #include <rime/common.h>
 #include <rime/resource.h>
 #include <rime/service.h>
@@ -16,7 +15,7 @@ namespace rime {
 // DbAccessor members
 
 bool DbAccessor::MatchesPrefix(const string& key) {
-  return boost::starts_with(key, prefix_);
+  return key.starts_with(prefix_);
 }
 
 // DbComponentBase
@@ -43,7 +42,7 @@ Db::Db(const string& file_name, const string& name)
       file_name_(file_name) {}
 
 bool Db::Exists() const {
-  return boost::filesystem::exists(file_name());
+  return std::filesystem::exists(file_name());
 }
 
 bool Db::Remove() {
@@ -51,7 +50,7 @@ bool Db::Remove() {
     LOG(ERROR) << "attempt to remove opened db '" << name_ << "'.";
     return false;
   }
-  return boost::filesystem::remove(file_name());
+  return std::filesystem::remove(file_name());
 }
 
 bool Db::CreateMetadata() {

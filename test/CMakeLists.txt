@@ -5,7 +5,7 @@ target_link_libraries(rime_test
   ${rime_library}
   ${rime_dict_library}
   ${rime_gears_library}
-  ${GTEST_LIBRARIES})
+  gtest)
 if(BUILD_SHARED_LIBS)
   target_compile_definitions(rime_test PRIVATE RIME_IMPORTS)
 endif(BUILD_SHARED_LIBS)

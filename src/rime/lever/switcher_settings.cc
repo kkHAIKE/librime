@@ -5,13 +5,12 @@
 // 2012-02-18 GONG Chen <chen.sst@gmail.com>
 //
 #include <utility>
-#include <boost/algorithm/string.hpp>
-#include <boost/filesystem.hpp>
+#include <filesystem>
 #include <rime/config.h>
 #include <rime/deployer.h>
 #include <rime/lever/switcher_settings.h>
 
-namespace fs = boost::filesystem;
+namespace fs = std::filesystem;
 
 namespace rime {
 
@@ -56,7 +55,7 @@ void SwitcherSettings::GetAvailableSchemasFromDirectory(const fs::path& dir) {
   for (fs::directory_iterator it(dir), end;
        it != end; ++it) {
     string file_path(it->path().string());
-    if (boost::ends_with(file_path, ".schema.yaml")) {
+    if (file_path.ends_with(".schema.yaml")) {
       Config config;
       if (config.LoadFromFile(file_path)) {
         SchemaInfo info;

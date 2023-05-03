@@ -13,8 +13,7 @@ namespace rime {
 
 class Messenger {
  public:
-  using MessageSink = signal<void (const string& message_type,
-                                   const string& message_value)>;
+  using MessageSink = signal<const string&, const string&>;
 
   MessageSink& message_sink() { return message_sink_; }
 

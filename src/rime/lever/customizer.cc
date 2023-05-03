@@ -5,13 +5,12 @@
 // 2011-12-12 GONG Chen <chen.sst@gmail.com>
 //
 #include <stdint.h>
-#include <boost/lexical_cast.hpp>
 #include <rime/common.h>
 #include <rime/config.h>
 #include <rime/algo/utilities.h>
 #include <rime/lever/customizer.h>
 
-namespace fs = boost::filesystem;
+namespace fs = std::filesystem;
 
 namespace rime {
 
@@ -63,7 +62,7 @@ bool Customizer::UpdateConfigFile() {
       redistribute = true;
     }
   }
-  
+
   fs::path custom_path(dest_path_);
   if (custom_path.extension() != ".yaml") {
     custom_path.clear();
@@ -77,7 +76,7 @@ bool Customizer::UpdateConfigFile() {
   }
   string customization;
   if (!custom_path.empty() && fs::exists(custom_path)) {
-    customization = boost::lexical_cast<string>(
+    customization = std::to_string(
         Checksum(custom_path.string()));
   }
   if (applied_customization != customization) {
@@ -94,7 +93,7 @@ bool Customizer::UpdateConfigFile() {
   if (redistribute || (is_dirty && !missing_original_copy)) {
     try {
       fs::copy_file(source_path_, dest_path_,
-                    fs::copy_option::overwrite_if_exists);
+                    fs::copy_options::overwrite_existing);
     }
     catch (...) {
       LOG(ERROR) << "Error copying config file '"

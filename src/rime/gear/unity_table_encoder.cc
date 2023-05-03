@@ -4,7 +4,6 @@
 //
 // 2013-08-31 GONG Chen <chen.sst@gmail.com>
 //
-#include <boost/algorithm/string.hpp>
 #include <rime/dict/dict_settings.h>
 #include <rime/dict/user_dictionary.h>
 #include <rime/dict/reverse_lookup_dictionary.h>
@@ -61,7 +60,7 @@ bool UnityTableEncoder::TranslateWord(const string& word,
   string str_list;
   if (rev_dict_->LookupStems(word, &str_list) ||
       rev_dict_->ReverseLookup(word, &str_list)) {
-    boost::split(*code, str_list, boost::is_any_of(" "));
+    Split(*code, str_list, ' ');
     return !code->empty();
   }
   return false;
@@ -80,7 +79,7 @@ size_t UnityTableEncoder::LookupPhrases(UserDictEntryIterator* result,
 }
 
 bool UnityTableEncoder::HasPrefix(const string& key) {
-  return boost::starts_with(key, kEncodedPrefix);
+  return key.starts_with(kEncodedPrefix);
 }
 
 bool UnityTableEncoder::AddPrefix(string* key) {

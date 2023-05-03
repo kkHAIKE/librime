@@ -5,8 +5,6 @@
 // 2011-11-27 GONG Chen <chen.sst@gmail.com>
 //
 #include <fstream>
-#include <boost/algorithm/string.hpp>
-#include <boost/lexical_cast.hpp>
 #include <rime/dict/dict_settings.h>
 #include <rime/dict/entry_collector.h>
 #include <rime/dict/preset_vocabulary.h>
@@ -75,7 +73,7 @@ void EntryCollector::Collect(const string& dict_file) {
   bool enable_comment = true;
   string line;
   while (getline(fin, line)) {
-    boost::algorithm::trim_right(line);
+    line.erase(std::find_if_not(line.rbegin(), line.rend(), isspace).base(), line.end());
     // skip empty lines and comments
     if (line.empty()) continue;
     if (enable_comment && line[0] == '#') {
@@ -87,8 +85,7 @@ void EntryCollector::Collect(const string& dict_file) {
     }
     // read a dict entry
     vector<string> row;
-    boost::algorithm::split(row, line,
-                            boost::algorithm::is_any_of("\t"));
+    Split(row, line, '\t');
     int num_columns = static_cast<int>(row.size());
     if (num_columns <= text_column || row[text_column].empty()) {
       LOG(WARNING) << "Missing entry text at #" << num_entries << ".";
@@ -158,14 +155,14 @@ void EntryCollector::CreateEntry(const string &word,
   e.raw_code.FromString(code_str);
   e.text = word;
   e.weight = 0.0;
-  bool scaled = boost::ends_with(weight_str, "%");
+  bool scaled = weight_str.ends_with("%");
   if ((weight_str.empty() || scaled) && preset_vocabulary) {
     preset_vocabulary->GetWeightForEntry(e.text, &e.weight);
   }
   if (scaled) {
     double percentage = 100.0;
     try {
-      percentage = boost::lexical_cast<double>(
+      percentage = std::stod(
           weight_str.substr(0, weight_str.length() - 1));
     }
     catch (...) {
@@ -176,7 +173,7 @@ void EntryCollector::CreateEntry(const string &word,
   }
   else if (!weight_str.empty()) {  // absolute weight
     try {
-      e.weight = boost::lexical_cast<double>(weight_str);
+      e.weight = std::stod(weight_str);
     }
     catch (...) {
       LOG(WARNING) << "invalid entry definition at #" << num_entries << ".";

@@ -3,7 +3,7 @@
 // Distributed under the BSD License
 //
 
-#include <boost/format.hpp>
+#include <fmt/core.h>
 #include <gtest/gtest.h>
 #include <rime/component.h>
 #include <rime/config.h>
@@ -34,7 +34,7 @@ class RimeConfigCompilerTest : public RimeConfigCompilerTestBase {
 
 TEST_F(RimeConfigCompilerTest, IncludeLocalReference) {
   for (size_t i = 0; i < 4; ++i) {
-    auto prefix = boost::str(boost::format("include_local_reference/@%u/") % i);
+    auto prefix = fmt::format("include_local_reference/@{}/", i);
     EXPECT_TRUE(config_->IsNull(prefix + "__include"));
     string actual;
     EXPECT_TRUE(config_->GetString(prefix + "terrans/player", &actual));

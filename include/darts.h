@@ -1429,12 +1429,12 @@ class DoubleArrayBuilder {
   void clear();
 
  private:
-  enum { BLOCK_SIZE = 256 };
-  enum { NUM_EXTRA_BLOCKS = 16 };
-  enum { NUM_EXTRAS = BLOCK_SIZE * NUM_EXTRA_BLOCKS };
+  static const size_t BLOCK_SIZE = 256;
+  static const size_t NUM_EXTRA_BLOCKS = 16;
+  static const size_t NUM_EXTRAS = BLOCK_SIZE * NUM_EXTRA_BLOCKS;
 
-  enum { UPPER_MASK = 0xFF << 21 };
-  enum { LOWER_MASK = 0xFF };
+  static const size_t UPPER_MASK = 0xFF << 21;
+  static const size_t LOWER_MASK = 0xFF;
 
   typedef DoubleArrayBuilderUnit unit_type;
   typedef DoubleArrayBuilderExtraUnit extra_type;

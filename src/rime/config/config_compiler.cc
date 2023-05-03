@@ -1,4 +1,3 @@
-#include <boost/algorithm/string.hpp>
 #include <rime/common.h>
 #include <rime/resource.h>
 #include <rime/config/config_compiler.h>
@@ -41,8 +40,13 @@ struct ConfigDependencyGraph {
 };
 
 string ConfigDependencyGraph::current_resource_id() const {
-  return key_stack.empty() ? string()
-      : boost::trim_right_copy_if(key_stack.front(), boost::is_any_of(":"));
+  if (key_stack.empty()) {
+    return {};
+  }
+  if (auto pos = key_stack.front().find_last_not_of(':'); pos != string::npos) {
+    return key_stack.front().substr(0, pos + 1);
+  }
+  return {};
 }
 
 string Reference::repr() const {
@@ -149,22 +153,29 @@ static constexpr const char* EQU_SUFFIX_OPERATOR = "/=";
 
 inline static bool IsAppending(const string& key) {
   return key == ConfigCompiler::APPEND_DIRECTIVE ||
-      boost::ends_with(key, ADD_SUFFIX_OPERATOR);
+      key.ends_with(ADD_SUFFIX_OPERATOR);
 }
 inline static bool IsMerging(const string& key,
                              const an<ConfigItem>& value,
                              bool merge_tree) {
   return key == ConfigCompiler::MERGE_DIRECTIVE ||
-      boost::ends_with(key, ADD_SUFFIX_OPERATOR) ||
+      key.ends_with(ADD_SUFFIX_OPERATOR) ||
       (merge_tree && (!value || Is<ConfigMap>(value)) &&
-       !boost::ends_with(key, EQU_SUFFIX_OPERATOR));
+       !key.ends_with(EQU_SUFFIX_OPERATOR));
 }
 
 inline static string StripOperator(const string& key, bool adding) {
-  return (key == ConfigCompiler::APPEND_DIRECTIVE ||
-          key == ConfigCompiler::MERGE_DIRECTIVE) ? "" :
-      boost::erase_last_copy(
-          key, adding ? ADD_SUFFIX_OPERATOR : EQU_SUFFIX_OPERATOR);
+  if (key == ConfigCompiler::APPEND_DIRECTIVE ||
+      key == ConfigCompiler::MERGE_DIRECTIVE) {
+      return {};
+  }
+
+  auto pos = key.rfind(adding ? ADD_SUFFIX_OPERATOR : EQU_SUFFIX_OPERATOR);
+  if (pos == string::npos) {
+    return key;
+  }
+
+  return key.substr(0, pos) + key.substr(pos + 2);
 }
 
 // defined in config_data.cc
@@ -512,7 +523,7 @@ bool ConfigCompiler::Link(an<ConfigResource> target) {
 static bool HasCircularDependencies(ConfigDependencyGraph* graph,
                                     const string& path) {
   for (const auto& x : graph->resolve_chain) {
-    if (boost::starts_with(x, path) &&
+    if (x.starts_with(path) &&
         (x.length() == path.length() || x[path.length()] == '/'))
       return true;
   }

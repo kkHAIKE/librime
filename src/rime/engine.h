@@ -19,7 +19,7 @@ class Context;
 
 class Engine : public Messenger {
  public:
-  using CommitSink = signal<void (const string& commit_text)>;
+  using CommitSink = signal<const string&>;
 
   virtual ~Engine();
   virtual bool ProcessKey(const KeyEvent& key_event) { return false; }

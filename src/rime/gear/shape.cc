@@ -5,7 +5,6 @@
 // 2013-07-02 GONG Chen <chen.sst@gmail.com>
 //
 #include <sstream>
-#include <boost/algorithm/string.hpp>
 #include <rime/context.h>
 #include <rime/engine.h>
 #include <rime/key_event.h>
@@ -17,7 +16,8 @@ void ShapeFormatter::Format(string* text) {
   if (!engine_->context()->get_option("full_shape")) {
     return;
   }
-  if (boost::all(*text, !boost::is_from_range('\x20', '\x7e'))) {
+  if (std::all_of(text->begin(), text->end(),
+                  [](char ch) { return ch < 0x20 || ch > 0x7e; })) {
     return;
   }
   std::ostringstream oss;

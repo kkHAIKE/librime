@@ -4,15 +4,13 @@
 //
 // 2013-04-22 GONG Chen <chen.sst@gmail.com>
 //
-#include <boost/algorithm/string.hpp>
-#include <boost/filesystem.hpp>
-#include <boost/scope_exit.hpp>
+#include <filesystem>
 #include <rime/deployer.h>
 #include <rime/dict/db.h>
 #include <rime/dict/user_db.h>
 #include <rime/dict/user_db_recovery_task.h>
 
-namespace fs = boost::filesystem;
+namespace fs = std::filesystem;
 
 namespace rime {
 
@@ -26,10 +24,9 @@ bool UserDbRecoveryTask::Run(Deployer* deployer) {
   if (!db_) {
     return false;
   }
-  BOOST_SCOPE_EXIT( (&db_) ) {
+  ScopeExit([this]() {
     db_->enable();
-  }
-  BOOST_SCOPE_EXIT_END
+  });
 
   if (db_->loaded()) {
     LOG(WARNING) << "cannot recover loaded db '" << db_->name() << "'.";
@@ -42,8 +39,8 @@ bool UserDbRecoveryTask::Run(Deployer* deployer) {
   // repair didn't work on the damanged db file; remove and recreate it
   LOG(INFO) << "recreating db file.";
   if (db_->Exists()) {
-    boost::system::error_code ec;
-    boost::filesystem::rename(db_->file_name(), db_->file_name() + ".old", ec);
+    std::error_code ec;
+    std::filesystem::rename(db_->file_name(), db_->file_name() + ".old", ec);
     if (ec && !db_->Remove()) {
       LOG(ERROR) << "Error removing db file '" << db_->file_name() << "'.";
       return false;
@@ -63,9 +60,11 @@ void UserDbRecoveryTask::RestoreUserDataFromSnapshot(Deployer* deployer) {
   if (!component || !UserDbHelper(db_).IsUserDb())
     return;
   string dict_name(db_->name());
-  boost::erase_last(dict_name, component->extension());
+  if (auto pos = dict_name.rfind(component->extension()); pos != string::npos) {
+    dict_name.erase(pos, component->extension().size());
+  }
   // locate snapshot file
-  boost::filesystem::path dir(deployer->user_data_sync_dir());
+  std::filesystem::path dir(deployer->user_data_sync_dir());
   // try *.userdb.txt
   fs::path snapshot_path = dir / (dict_name + UserDb::snapshot_extension());
   if (!fs::exists(snapshot_path)) {
@@ -85,10 +84,10 @@ void UserDbRecoveryTask::RestoreUserDataFromSnapshot(Deployer* deployer) {
 
 UserDbRecoveryTask* UserDbRecoveryTaskComponent::Create(TaskInitializer arg) {
   try {
-    auto db = boost::any_cast<an<Db>>(arg);
+    auto db = std::any_cast<an<Db>>(arg);
     return new UserDbRecoveryTask(db);
   }
-  catch (const boost::bad_any_cast&) {
+  catch (const std::bad_any_cast&) {
     return NULL;
   }
 }

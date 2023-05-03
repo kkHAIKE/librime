@@ -9,7 +9,6 @@
 
 #include <stdint.h>
 #include <cstring>
-#include <boost/utility.hpp>
 #include <rime_api.h>
 #include <rime/common.h>
 
@@ -87,10 +86,13 @@ struct List {
 
 class MappedFileImpl;
 
-class MappedFile : boost::noncopyable {
+class MappedFile {
  protected:
   explicit MappedFile(const string& file_name);
   RIME_API virtual ~MappedFile();
+
+  MappedFile(const MappedFile&) = delete;
+  MappedFile& operator= (const MappedFile&) = delete;
 
   bool Create(size_t capacity);
   bool OpenReadOnly();

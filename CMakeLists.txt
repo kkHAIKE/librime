@@ -6,6 +6,8 @@ cmake_minimum_required(VERSION 3.16)
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
+set(CMAKE_CXX_FLAGS -Wno-deprecated-declarations)
+
 set(rime_version 1.8.5)
 set(rime_soversion 1)
 
@@ -108,12 +110,12 @@ set(LEVELDB_BUILD_TESTS OFF CACHE BOOL "" FORCE)
 set(LEVELDB_BUILD_BENCHMARKS OFF CACHE BOOL "" FORCE)
 FetchContent_Declare(
   leveldb
-  URL https://github.com/google/leveldb/archive/refs/tags/1.23.tar.gz
-  URL_HASH SHA256=9a37f8a6174f09bd622bc723b55881dc541cd50747cbd08831c2a82d620f6d76
+  URL https://github.com/google/leveldb/archive/7a2f64ed504f510425183fa225ae80c671f0145f.tar.gz
+  URL_HASH SHA256=34f298843050115c51577e7485567def72b288599a24f30624786326ff004b6f
   # SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/deps/leveldb
 )
 
-# add_subdirectory(deps) opencc contains
+add_subdirectory(deps) # opencc contains
 # find_package(Marisa REQUIRED)
 # if(Marisa_FOUND)
 #   include_directories(${Marisa_INCLUDE_PATH})
@@ -124,7 +126,30 @@ FetchContent_Declare(
   URL https://github.com/BYVoid/OpenCC/archive/refs/tags/ver.1.1.6.tar.gz
   URL_HASH SHA256=169bff4071ffe814dc16df7d180ff6610db418f4816e9c0ce02cf874bdf058df
 )
-FetchContent_MakeAvailable(glog googletest yaml-cpp leveldb opencc)
+
+FetchContent_Declare(
+  sigslot
+  URL https://github.com/palacaze/sigslot/archive/refs/tags/v1.2.2.tar.gz
+  URL_HASH SHA256=d2dd0f91c13dbec1026aa5f393e511db863a8c32146c68c10888a9c193458437
+)
+
+FetchContent_Declare(
+  fmt
+  URL https://github.com/fmtlib/fmt/archive/refs/tags/9.1.0.tar.gz
+  URL_HASH SHA256=5dea48d1fcddc3ec571ce2058e13910a0d4a6bab4cc09a809d8b1dd1c88ae6f2
+)
+
+FetchContent_MakeAvailable(glog googletest yaml-cpp leveldb opencc sigslot fmt)
+
+add_library(libopencc_header INTERFACE)
+target_compile_definitions(libopencc_header INTERFACE
+  Opencc_BUILT_AS_STATIC)
+target_include_directories(libopencc_header INTERFACE
+  ${opencc_SOURCE_DIR}/src
+  ${opencc_BINARY_DIR}/src
+)
+
+find_package(ZLIB REQUIRED)
 
 # if(Opencc_STATIC)
 #   add_definitions(-DOpencc_BUILT_AS_STATIC)
@@ -159,9 +184,9 @@ if(MSVC)
   add_definitions("/wd4244 /wd4996 /DBOOST_UUID_RANDOM_PROVIDER_FORCE_WINCRYPT")
 endif()
 
-if(UNIX)
-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++14")
-endif()
+# if(UNIX)
+#   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++14")
+# endif()
 
 if (NOT CMAKE_BUILD_PARALLEL_LEVEL)
   include(ProcessorCount)
@@ -259,11 +284,11 @@ add_subdirectory(src)
 if(BUILD_SHARED_LIBS)
   add_subdirectory(tools)
 
-  if(BUILD_TEST)
-    add_subdirectory(test)
-  endif()
-
   if (BUILD_SAMPLE)
     add_subdirectory(sample)
   endif()
+endif()
+
+if(BUILD_TEST)
+  add_subdirectory(test)
 endif()

@@ -5,9 +5,8 @@
 // 2011-11-02 GONG Chen <chen.sst@gmail.com>
 //
 #include <cstdlib>
-#include <boost/algorithm/string.hpp>
-#include <boost/format.hpp>
-#include <boost/lexical_cast.hpp>
+#include <charconv>
+#include <fmt/core.h>
 #include <rime/service.h>
 #include <rime/algo/dynamics.h>
 #include <rime/dict/text_db.h>
@@ -20,13 +19,13 @@ UserDbValue::UserDbValue(const string& value) {
 }
 
 string UserDbValue::Pack() const {
-  return boost::str(boost::format("c=%1% d=%2% t=%3%") %
-                    commits % dee % tick);
+  return fmt::format("c={} d={} t={}",
+                    commits, dee, tick);
 }
 
 bool UserDbValue::Unpack(const string& value) {
   vector<string> kv;
-  boost::split(kv, value, boost::is_any_of(" "));
+  Split(kv, value, ' ');
   for (const string& k_eq_v : kv) {
     size_t eq = k_eq_v.find('=');
     if (eq == string::npos)
@@ -35,13 +34,17 @@ bool UserDbValue::Unpack(const string& value) {
     string v(k_eq_v.substr(eq + 1));
     try {
       if (k == "c") {
-        commits = boost::lexical_cast<int>(v);
+        commits = std::stoi(v);
       }
       else if (k == "d") {
-        dee = (std::min)(10000.0, boost::lexical_cast<double>(v));
+        dee = (std::min)(10000.0, std::stod(v));
       }
       else if (k == "t") {
-        tick = boost::lexical_cast<TickCount>(v);
+        TickCount tmp{};
+        if (std::from_chars(v.data(), v.data() + v.size(), tmp).ec != std::errc()) {
+          return false;
+        }
+        tick = tmp;
       }
     }
     catch (...) {
@@ -89,8 +92,7 @@ static bool userdb_entry_formatter(const string& key,
                                    const string& value,
                                    Tsv* tsv) {
   Tsv& row(*tsv);
-  boost::algorithm::split(row, key,
-                          boost::algorithm::is_any_of("\t"));
+  Split(row, key, '\t');
   if (row.size() != 2 ||
       row[0].empty() || row[1].empty())
     return false;
@@ -116,7 +118,7 @@ bool UserDbHelper::UpdateUserInfo() {
 }
 
 bool UserDbHelper::IsUniformFormat(const string& file_name) {
-  return boost::ends_with(file_name, plain_userdb_extension);
+  return file_name.ends_with(plain_userdb_extension);
 }
 
 bool UserDbHelper::UniformBackup(const string& snapshot_file) {
@@ -159,10 +161,10 @@ string UserDbHelper::GetDbName() {
   string name;
   if (!db_->MetaFetch("/db_name", &name))
     return name;
-  auto ext = boost::find_last(name, ".userdb");
-  if (!ext.empty()) {
+  auto pos = name.rfind(".userdb");
+  if (pos != string::npos) {
     // remove ".userdb.*"
-    name.erase(ext.begin(), name.end());
+    name.erase(name.begin() + pos, name.end());
   }
   return name;
 }
@@ -183,7 +185,10 @@ static TickCount get_tick_count(Db* db) {
   string tick;
   if (db && db->MetaFetch("/tick", &tick)) {
     try {
-      return boost::lexical_cast<TickCount>(tick);
+      TickCount ret{};
+      if (std::from_chars(tick.data(), tick.data() + tick.size(), ret).ec == std::errc()) {
+        return ret;
+      }
     }
     catch (...) {
     }
@@ -204,8 +209,10 @@ UserDbMerger::~UserDbMerger() {
 bool UserDbMerger::MetaPut(const string& key, const string& value) {
   if (key == "/tick") {
     try {
-      their_tick_ = boost::lexical_cast<TickCount>(value);
-      max_tick_ = (std::max)(our_tick_, their_tick_);
+      TickCount tmp{};
+      if (std::from_chars(value.data(), value.data() + value.size(), tmp).ec == std::errc()) {
+        max_tick_ = (std::max)(our_tick_, tmp);
+      }
     }
     catch (...) {
     }
@@ -239,7 +246,7 @@ void UserDbMerger::CloseMerge() {
     return;
   Deployer& deployer(Service::instance().deployer());
   try {
-    db_->MetaUpdate("/tick", boost::lexical_cast<string>(max_tick_));
+    db_->MetaUpdate("/tick", std::to_string(max_tick_));
     db_->MetaUpdate("/user_id", deployer.user_id);
   }
   catch (...) {

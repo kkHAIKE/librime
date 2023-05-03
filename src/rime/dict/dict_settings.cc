@@ -5,7 +5,6 @@
 // 2012-11-11 GONG Chen <chen.sst@gmail.com>
 //
 #include <sstream>
-#include <boost/algorithm/string.hpp>
 #include <rime/dict/dict_settings.h>
 
 namespace rime {
@@ -21,7 +20,7 @@ bool DictSettings::LoadDictHeader(std::istream& stream) {
   std::stringstream header;
   string line;
   while (getline(stream, line)) {
-    boost::algorithm::trim_right(line);
+    line.erase(std::find_if_not(line.rbegin(), line.rend(), isspace).base(), line.end());
     header << line << std::endl;
     if (line == "...") {  // yaml doc ending
       break;

@@ -4,8 +4,7 @@
 //
 // 2011-06-19 GONG Chen <chen.sst@gmail.com>
 //
-#include <boost/algorithm/string.hpp>
-#include <boost/range/adaptor/reversed.hpp>
+#include <ranges>
 #include <rime/candidate.h>
 #include <rime/composition.h>
 #include <rime/menu.h>
@@ -129,8 +128,17 @@ string Composition::GetScriptText() const {
     auto cand = seg.GetSelectedCandidate();
     start = end;
     end = cand ? cand->end() : seg.end;
-    if (cand && !cand->preedit().empty())
-      result += boost::erase_first_copy(cand->preedit(), "\t");
+    if (cand && !cand->preedit().empty()) {
+      auto pos = cand->preedit().find('\t');
+      if (pos != string::npos) {
+        result += cand->preedit().substr(0, pos);
+        if (pos != cand->preedit().length() - 1) {
+          result += cand->preedit().substr(pos + 1);
+        }
+      } else {
+        result += cand->preedit();
+      }
+    }
     else
       result += input_.substr(start, end - start);
   }
@@ -167,7 +175,7 @@ string Composition::GetDebugText() const {
 
 string Composition::GetTextBefore(size_t pos) const {
   if (empty()) return string();
-  for (const auto& seg : boost::adaptors::reverse(*this)) {
+  for (const auto& seg : std::ranges::reverse_view(*this)) {
     if (seg.end <= pos) {
       if (auto cand = seg.GetSelectedCandidate()) {
         return cand->text();

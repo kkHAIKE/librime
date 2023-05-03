@@ -2,14 +2,13 @@
 // Copyright RIME Developers
 // Distributed under the BSD License
 //
-#include <boost/algorithm/string.hpp>
 #include <rime/config/config_compiler_impl.h>
 #include <rime/config/plugins.h>
 
 namespace rime {
 
 static string remove_suffix(const string& input, const string& suffix) {
-  return boost::ends_with(input, suffix) ?
+  return input.ends_with(suffix) ?
       input.substr(0, input.length() - suffix.length()) : input;
 }
 
@@ -17,7 +16,7 @@ static string remove_suffix(const string& input, const string& suffix) {
 // therefore it's done at the end of Compile phase.
 bool AutoPatchConfigPlugin::ReviewCompileOutput(ConfigCompiler* compiler,
                                                 an<ConfigResource> resource) {
-  if (boost::ends_with(resource->resource_id, ".custom"))
+  if (resource->resource_id.ends_with(".custom"))
     return true;
   // skip auto-patch if there is already an explicit `__patch` at the root node
   auto root_deps = compiler->GetDependencies(resource->resource_id + ":");

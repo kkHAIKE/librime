@@ -4,7 +4,7 @@
 //
 // 2011-11-20 GONG Chen <chen.sst@gmail.com>
 //
-#include <boost/range/adaptor/reversed.hpp>
+#include <ranges>
 #include <rime/common.h>
 #include <rime/composition.h>
 #include <rime/context.h>
@@ -195,7 +195,7 @@ bool Navigator::GoHome(Context* ctx) {
   const Composition& comp = ctx->composition();
   if (!comp.empty()) {
     size_t confirmed_pos = caret_pos;
-    for (const Segment& seg : boost::adaptors::reverse(comp)) {
+    for (const Segment& seg : std::ranges::reverse_view(comp)) {
       if (seg.status >= Segment::kSelected) {
         break;
       }

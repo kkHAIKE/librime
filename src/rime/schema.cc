@@ -4,7 +4,6 @@
 //
 // 2011-05-08 GONG Chen <chen.sst@gmail.com>
 //
-#include <boost/algorithm/string.hpp>
 #include <rime/schema.h>
 
 namespace rime {
@@ -17,7 +16,7 @@ Schema::Schema()
 
 Schema::Schema(const string& schema_id)
     : schema_id_(schema_id) {
-  config_.reset(boost::starts_with(schema_id_, L".") ?
+  config_.reset(schema_id_.starts_with(".") ?
                 Config::Require("config")->Create(schema_id.substr(1)) :
                 Config::Require("schema")->Create(schema_id));
   FetchUsefulConfigItems();

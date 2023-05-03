@@ -2,7 +2,6 @@
 // Copyright RIME Developers
 // Distributed under the BSD License
 //
-#include <boost/algorithm/string.hpp>
 #include <rime/config/config_compiler_impl.h>
 #include <rime/config/config_cow_ref.h>
 #include <rime/config/plugins.h>
@@ -16,7 +15,7 @@ bool DefaultConfigPlugin::ReviewCompileOutput(
 
 bool DefaultConfigPlugin::ReviewLinkOutput(
     ConfigCompiler* compiler, an<ConfigResource> resource) {
-  if (!boost::ends_with(resource->resource_id, ".schema"))
+  if (!resource->resource_id.ends_with(".schema"))
     return true;
   auto target = Cow(resource, "menu");
   Reference reference{"default", "menu", true};

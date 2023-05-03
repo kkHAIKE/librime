@@ -9,8 +9,7 @@
 #include <algorithm>
 #include <stack>
 #include <cmath>
-#include <boost/algorithm/string/join.hpp>
-#include <boost/range/adaptor/reversed.hpp>
+#include <ranges>
 #include <rime/composition.h>
 #include <rime/candidate.h>
 #include <rime/config.h>
@@ -53,7 +52,7 @@ static bool syllabify_dfs(SyllabifyTask* task,
   if (z == task->graph.edges.end())
     return false;
   // favor longer spellings
-  for (const auto& y : boost::adaptors::reverse(z->second)) {
+  for (const auto& y : std::ranges::reverse_view(z->second)) {
     size_t end_vertex_pos = y.first;
     if (end_vertex_pos > task->target_pos)
       continue;
@@ -215,8 +214,8 @@ string ScriptTranslator::Spell(const Code& code) {
   vector<string> syllables;
   if (!dict_ || !dict_->Decode(code, &syllables) || syllables.empty())
     return result;
-  result =  boost::algorithm::join(syllables,
-                                   string(1, delimiters_.at(0)));
+  result = Join(syllables,
+                string(1, delimiters_.at(0)));
   comment_formatter_.Apply(&result);
   return result;
 }

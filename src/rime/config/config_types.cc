@@ -5,8 +5,6 @@
 // 2011-04-06 Zou Xu <zouivex@gmail.com>
 //
 #include <cstdlib>
-#include <boost/algorithm/string.hpp>
-#include <boost/lexical_cast.hpp>
 #include <rime/config/config_data.h>
 #include <rime/config/config_types.h>
 
@@ -41,12 +39,11 @@ bool ConfigValue::GetBool(bool* value) const {
   if (!value || value_.empty())
     return false;
   string bstr = value_;
-  boost::to_lower(bstr);
-  if ("true" == bstr) {
+  if (strcasecmp(value_.c_str(), "true") == 0) {
     *value = true;
     return true;
   }
-  else if ("false" == bstr) {
+  else if (strcasecmp(value_.c_str(), "false") == 0) {
     *value = false;
     return true;
   }
@@ -58,7 +55,7 @@ bool ConfigValue::GetInt(int* value) const {
   if (!value || value_.empty())
     return false;
   // try to parse hex number
-  if (boost::starts_with(value_, "0x")) {
+  if (value_.starts_with("0x")) {
     char* p = NULL;
     unsigned int hex = std::strtoul(value_.c_str(), &p, 16);
     if (*p == '\0') {
@@ -68,7 +65,7 @@ bool ConfigValue::GetInt(int* value) const {
   }
   // decimal
   try {
-    *value = boost::lexical_cast<int>(value_);
+    *value = std::stoi(value_);
   }
   catch (...) {
     return false;
@@ -80,7 +77,7 @@ bool ConfigValue::GetDouble(double* value) const {
   if (!value || value_.empty())
     return false;
   try {
-    *value = boost::lexical_cast<double>(value_);
+    *value = std::stod(value_);
   }
   catch (...) {
     return false;
@@ -100,12 +97,12 @@ bool ConfigValue::SetBool(bool value) {
 }
 
 bool ConfigValue::SetInt(int value) {
-  value_ = boost::lexical_cast<string>(value);
+  value_ = std::to_string(value);
   return true;
 }
 
 bool ConfigValue::SetDouble(double value) {
-  value_ = boost::lexical_cast<string>(value);
+  value_ = std::to_string(value);
   return true;
 }
 

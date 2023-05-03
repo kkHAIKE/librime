@@ -7,10 +7,12 @@
 // 2011-06-30 GONG Chen <chen.sst@gmail.com>
 //
 #include <fstream>
-#include <boost/filesystem.hpp>
-#include <boost/interprocess/file_mapping.hpp>
-#include <boost/interprocess/mapped_region.hpp>
+#include <filesystem>
 #include <rime/dict/mapped_file.h>
+
+#include <fcntl.h> // for open()
+#include <sys/mman.h> // for mmap()
+#include <sys/stat.h> // for fstat()
 
 #ifdef BOOST_RESIZE_FILE
 
@@ -48,30 +50,50 @@ class MappedFileImpl {
   };
 
   MappedFileImpl(const string& file_name, OpenMode mode) {
-    boost::interprocess::mode_t file_mapping_mode =
-        (mode == kOpenReadOnly) ? boost::interprocess::read_only
-                                : boost::interprocess::read_write;
-    file_.reset(new boost::interprocess::file_mapping(file_name.c_str(), file_mapping_mode));
-    region_.reset(new boost::interprocess::mapped_region(*file_, file_mapping_mode));
+    int fd = ::open(file_name.c_str(), O_RDWR);
+    if (fd < 0) {
+      throw std::runtime_error("failed to open file '" + file_name + "'.");
+    }
+
+    struct stat st{};
+    if (::fstat(fd, &st) < 0) {
+      ::close(fd);
+      throw std::runtime_error("failed to stat file '" + file_name + "'.");
+    }
+    sz_ = st.st_size;
+
+    void *base = ::mmap(nullptr, st.st_size,
+                        PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
+    if (base == MAP_FAILED) {
+      ::close(fd);
+      throw std::runtime_error("failed to map file '" + file_name + "'.");
+    }
+
+    fd_ = fd;
+    base_ = base;
   }
   ~MappedFileImpl() {
-    region_.reset();
-    file_.reset();
+    if (base_) {
+      ::munmap(base_, sz_);
+    }
+    if (fd_ >= 0) {
+      ::close(fd_);
+    }
   }
   bool Flush() {
-    return region_->flush();
+    return ::msync(base_, sz_, MS_ASYNC) == 0;
   }
   void* get_address() const {
-    return region_->get_address();
+    return base_;
   }
   size_t get_size() const {
-    return region_->get_size();
+    return sz_;
   }
 
  private:
-  the<boost::interprocess::file_mapping> file_;
-  the<boost::interprocess::mapped_region> region_;
-
+  int fd_{};
+  void* base_{};
+  size_t sz_{};
 };
 
 MappedFile::MappedFile(const string& file_name)
@@ -135,7 +157,7 @@ void MappedFile::Close() {
 }
 
 bool MappedFile::Exists() const {
-  return boost::filesystem::exists(file_name_);
+  return std::filesystem::exists(file_name_);
 }
 
 bool MappedFile::IsOpen() const {
@@ -156,7 +178,7 @@ bool MappedFile::ShrinkToFit() {
 bool MappedFile::Remove() {
   if (IsOpen())
     Close();
-  return boost::interprocess::file_mapping::remove(file_name_.c_str());
+  return unlink(file_name_.c_str()) == 0;
 }
 
 bool MappedFile::Resize(size_t capacity) {

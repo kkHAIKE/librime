@@ -7,7 +7,7 @@
 #ifndef RIME_SWITCHER_SETTINGS_H_
 #define RIME_SWITCHER_SETTINGS_H_
 
-#include <boost/filesystem.hpp>
+#include <filesystem>
 #include "custom_settings.h"
 
 namespace rime {
@@ -26,18 +26,18 @@ class SwitcherSettings : public CustomSettings {
   using SchemaList = vector<SchemaInfo>;
   // a list of schema_ids
   using Selection = vector<string>;
-  
+
   explicit SwitcherSettings(Deployer* deployer);
   bool Load();
   bool Select(Selection selection);
   bool SetHotkeys(const string& hotkeys);
-  
+
   const SchemaList& available() const { return available_; }
   const Selection& selection() const { return selection_; }
   const string& hotkeys() const { return hotkeys_; }
 
  private:
-  void GetAvailableSchemasFromDirectory(const boost::filesystem::path& dir);
+  void GetAvailableSchemasFromDirectory(const std::filesystem::path& dir);
   void GetSelectedSchemasFromConfig();
   void GetHotkeysFromConfig();
 

@@ -2,7 +2,7 @@
 // Copyright RIME Developers
 // Distributed under the BSD License
 //
-#include <boost/filesystem.hpp>
+#include <filesystem>
 #include <rime/service.h>
 #include <rime/config/config_compiler.h>
 #include <rime/config/config_types.h>
@@ -35,7 +35,8 @@ bool BuildInfoPlugin::ReviewLinkOutput(
     }
     // TODO: store as 64-bit number to avoid the year 2038 problem
     timestamps[resource->resource_id] =
-        (int) boost::filesystem::last_write_time(file_name);
+        (int) std::chrono::duration_cast<std::chrono::seconds>(
+          std::filesystem::last_write_time(file_name).time_since_epoch()).count();
   });
   return true;
 }
