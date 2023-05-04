@@ -8,6 +8,11 @@ if [ ! -d plugins/lua ]; then
     bash install-plugins.sh kkHAIKE/librime-lua
 fi
 
+# install octagram plugin
+if [ ! -d plugins/octagram ]; then
+    bash install-plugins.sh kkHAIKE/librime-octagram
+fi
+
 # install lua
 if [ ! -d plugins/lua/thirdparty ]; then
     $(cd plugins/lua && bash action-install.sh)
