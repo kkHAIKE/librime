@@ -146,6 +146,14 @@ if(BUILD_SHARED_LIBS)
 else()
   add_library(rime-static STATIC ${rime_src})
   target_link_libraries(rime-static ${rime_deps})
-  set_target_properties(rime-static PROPERTIES OUTPUT_NAME "rime" PREFIX "lib")
+  # set_target_properties(rime-static PROPERTIES OUTPUT_NAME "rime" PREFIX "lib")
   install(TARGETS rime-static DESTINATION ${CMAKE_INSTALL_FULL_LIBDIR})
+
+  # Combine all static library
+  add_custom_target(combine
+    COMMAND libtool -static -o librime.a $<TARGET_FILE:fmt::fmt> $<TARGET_FILE:glog::glog> $<TARGET_FILE:leveldb> $<TARGET_FILE:marisa> $<TARGET_FILE:libopencc> $<TARGET_FILE:yaml-cpp::yaml-cpp> $<TARGET_FILE:rime-static>
+    WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
+    DEPENDS rime-static
+  )
+
 endif()
