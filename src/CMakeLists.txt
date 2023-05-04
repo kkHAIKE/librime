@@ -1,4 +1,5 @@
-set(LIBRARY_OUTPUT_PATH ${PROJECT_BINARY_DIR}/lib)
+# set(LIBRARY_OUTPUT_PATH ${PROJECT_BINARY_DIR}/lib)
+# not supoort EFFECTIVE_PLATFORM_NAME
 
 aux_source_directory(. rime_api_src)
 aux_source_directory(rime rime_base_src)

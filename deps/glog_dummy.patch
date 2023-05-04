@@ -1,0 +1,19 @@
+diff --git a/CMakeLists.txt b/CMakeLists.txt
+index 846b444..1be0ffa 100644
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -617,6 +617,7 @@ add_library (glogbase OBJECT
+ 
+ add_library (glog
+   $<TARGET_OBJECTS:glogbase>
++  src/dummy.c
+ )
+ 
+ add_library (glog::glog ALIAS glog)
+diff --git a/src/dummy.c b/src/dummy.c
+new file mode 100644
+index 0000000..8d1c8b6
+--- /dev/null
++++ b/src/dummy.c
+@@ -0,0 +1 @@
++ 

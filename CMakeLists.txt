@@ -1,12 +1,14 @@
+cmake_minimum_required(VERSION 3.16)
+
 set(CMAKE_USER_MAKE_RULES_OVERRIDE ${CMAKE_CURRENT_SOURCE_DIR}/cmake/c_flag_overrides.cmake)
 set(CMAKE_USER_MAKE_RULES_OVERRIDE_CXX ${CMAKE_CURRENT_SOURCE_DIR}/cmake/cxx_flag_overrides.cmake)
 
 project(rime)
-cmake_minimum_required(VERSION 3.16)
+
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-set(CMAKE_CXX_FLAGS -Wno-deprecated-declarations)
+set(CMAKE_CXX_FLAGS "-Wno-deprecated-declarations -Wno-shorten-64-to-32")
 
 set(rime_version 1.8.5)
 set(rime_soversion 1)
@@ -70,6 +72,7 @@ if(ENABLE_LOGGING)
     URL https://github.com/google/glog/archive/refs/tags/v0.6.0.tar.gz
     URL_HASH SHA256=8a83bf982f37bb70825df71a9709fa90ea9f4447fb3c099e1d720a439d88bad6
     # SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/deps/glog
+    PATCH_COMMAND patch -p1 < ${CMAKE_CURRENT_SOURCE_DIR}/deps/glog_dummy.patch
   )
 
   # if(Glog_STATIC)
@@ -91,6 +94,8 @@ if(BUILD_TEST)
     URL_HASH SHA256=ad7fdba11ea011c1d925b3289cf4af2c66a352e18d4c7264392fead75e919363
     # SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/deps/googletest
   )
+
+  FetchContent_MakeAvailable(googletest)
 
     enable_testing()
 
@@ -139,7 +144,7 @@ FetchContent_Declare(
   URL_HASH SHA256=5dea48d1fcddc3ec571ce2058e13910a0d4a6bab4cc09a809d8b1dd1c88ae6f2
 )
 
-FetchContent_MakeAvailable(glog googletest yaml-cpp leveldb opencc sigslot fmt)
+FetchContent_MakeAvailable(glog yaml-cpp leveldb opencc sigslot fmt)
 
 add_library(libopencc_header INTERFACE)
 target_compile_definitions(libopencc_header INTERFACE

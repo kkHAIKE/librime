@@ -1,5 +1,5 @@
 set(RIME_SOURCE_DIR ${PROJECT_SOURCE_DIR})
-set(LIBRARY_OUTPUT_PATH ${PROJECT_BINARY_DIR}/lib)
+# set(LIBRARY_OUTPUT_PATH ${PROJECT_BINARY_DIR}/lib)
 
 # work around CMake build issues on macOS
 set(rime_plugin_boilerplate_src "plugin.cc")

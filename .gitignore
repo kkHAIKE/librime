@@ -12,3 +12,7 @@ env.bat
 node_modules/
 *~
 .*.swp
+.vscode/
+.DS_Store
+build_ios/
+dist_ios/
