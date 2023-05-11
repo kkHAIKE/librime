@@ -42,6 +42,7 @@ rm -rf ../dist_ios/librime.xcframework
 
 mkdir -p public_header
 cp ../src/*.h public_header
+cp -a ../include/X11 public_header
 xcodebuild -create-xcframework \
     -library librime_iphone.a \
     -headers public_header \
