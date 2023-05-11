@@ -169,6 +169,13 @@ typedef struct rime_config_t {
   void* ptr;
 } RimeConfig;
 
+enum RimeConfigType {
+  RimeConfigType_kNull,
+  RimeConfigType_kScalar,
+  RimeConfigType_kList,
+  RimeConfigType_kMap,
+};
+
 typedef struct rime_config_iterator_t {
   void* list;
   void* map;
@@ -312,6 +319,7 @@ RIME_API Bool RimeUserConfigOpen(const char* config_id, RimeConfig* config);
 RIME_API Bool RimeConfigClose(RimeConfig* config);
 RIME_API Bool RimeConfigInit(RimeConfig* config);
 RIME_API Bool RimeConfigLoadString(RimeConfig* config, const char* yaml);
+RIME_API RimeConfigType RimeConfigGetType(RimeConfig* config);
 // Access config values
 RIME_API Bool RimeConfigGetBool(RimeConfig *config, const char *key, Bool *value);
 RIME_API Bool RimeConfigGetInt(RimeConfig *config, const char *key, int *value);

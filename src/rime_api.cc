@@ -815,6 +815,24 @@ RIME_API Bool RimeConfigLoadString(RimeConfig* config, const char* yaml) {
   return Bool(c->LoadFromStream(iss));
 }
 
+RIME_API RimeConfigType RimeConfigGetType(RimeConfig* config) {
+  if (!config || !config->ptr) {
+    return RimeConfigType_kNull;
+  }
+
+  Config* c = reinterpret_cast<Config*>(config->ptr);
+  if (c->IsValue("")) {
+    return RimeConfigType_kScalar;
+  }
+  if (c->IsList("")) {
+    return RimeConfigType_kList;
+  }
+  if (c->IsMap("")) {
+    return RimeConfigType_kMap;
+  }
+  return RimeConfigType_kNull;
+}
+
 RIME_API Bool RimeConfigGetItem(RimeConfig* config, const char* key, RimeConfig* value) {
   if (!config || !key || !value)
     return False;
